@@ -1,0 +1,90 @@
+version: '3.9'
+
+services:
+  config-service:
+    image: config-service
+    container_name: config-service
+    ports:
+      - "8089:8089"
+    networks:
+      - news-network
+    volumes:
+      - ./config-service/src/main/resources/config-repo:/config-service/src/main/resources/config-repo
+    environment:
+      - SPRING_PROFILES_ACTIVE=native
+      - SPRING_CLOUD_CONFIG_SERVER_NATIVE_SEARCH_LOCATIONS=file:/config-service/src/main/resources/config-repo
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8089/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  discovery-service:
+    image: discovery-service
+    container_name: discovery-service
+    ports:
+      - "8080:8080"
+    networks:
+      - news-network
+    depends_on:
+      # - config-service
+      config-service:
+        condition: service_healthy
+    environment:
+      - SPRING_CLOUD_CONFIG_URI=http://config-service:8089 # Config Service URI
+      - SPRING_APPLICATION_NAME=discovery-service # Name registered in Config Service
+      - SERVER_PORT=8080 # Optional: Ensure Discovery Service knows its port
+      - SPRING_PROFILES_ACTIVE=default # Set active Spring profile if needed
+
+  kafka:
+    image: confluentinc/cp-kafka:7.3.1
+    container_name: kafka
+    ports:
+      - "9093:9093"
+    networks:
+      - news-network
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:SSL,SSL:SSL
+      KAFKA_ADVERTISED_LISTENERS: SSL://kafka:9093
+      KAFKA_LISTENERS: SSL://0.0.0.0:9093,CONTROLLER://0.0.0.0:9094
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_NODE_ID: 1
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9094
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+
+      KAFKA_SSL_CLIENT_AUTH: "requested"
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_INTER_BROKER_LISTENER_NAME: SSL
+      # KAFKA_SECURITY_INTER_BROKER_PROTOCOL: SSL
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_KRAFT_MODE: true
+      KAFKA_LOG_MESSAGE_FORMAT_VERSION: "3.3"
+
+      KAFKA_SSL_KEYSTORE_FILENAME: kafka.keystore.jks
+      KAFKA_SSL_TRUSTSTORE_FILENAME: kafka.truststore.jks
+
+      KAFKA_SSL_KEYSTORE_CREDENTIALS: kafka_secret.txt
+      KAFKA_SSL_KEY_CREDENTIALS: kafka_secret.txt
+      KAFKA_SSL_TRUSTSTORE_CREDENTIALS: kafka_secret.txt
+
+      KAFKA_SSL_ENDPOINT_IDENTIFICATION_ALGORITHM: " "
+      KAFKA_SSL_CIPHER_SUITES: TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256
+
+      KAFKA_LISTENER_NAME_SSL_SSL_PRINCIPAL_MAPPING_RULES: RULE:^CN=([a-zA-Z0-9.]*).*$$/$$1/ , DEFAULT
+      KAFKA_LISTENER_NAME_TOKEN_SSL_PRINCIPAL_MAPPING_RULES: RULE:^CN=([a-zA-Z0-9.]*).*$$/$$1/ , DEFAULT
+
+      KAFKA_OPTS: -Djavax.net.debug=all 
+
+    command: "bash -c 'if [ ! -f /tmp/update_run.sh ]; then echo \"ERROR: Did you forget the update_run.sh file that came with this docker-compose.yml file?\" && exit 1 ; else /tmp/update_run.sh && /etc/confluent/docker/run ; fi'"
+
+    volumes:
+      - ./secrets/:/etc/kafka/secrets
+      - /var/lib/kafka/data
+      - ./update_run.sh:/tmp/update_run.sh
+
+networks:
+  news-network:
+    driver: bridge

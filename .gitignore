@@ -1,0 +1,14 @@
+/.idea
+/.metadata
+/api-gateway
+/auth-service
+/config-service
+/discovery-service
+/news-service
+/notification-service
+/search-service
+/secrets
+/subscription-service
+/user-service
+
+news-app.code-workspace
