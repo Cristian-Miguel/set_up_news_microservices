@@ -10,5 +10,6 @@
 /secrets
 /subscription-service
 /user-service
+/etc/kafka/secrets
 
 news-app.code-workspace

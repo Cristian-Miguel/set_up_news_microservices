@@ -1,70 +1,84 @@
 #!/bin/bash
 
 # Variables
-CA_KEY="ca.key"
-CA_CERT="ca.crt"
-CA_SERIAL="ca.srl"
+CA_KEY_PEM="ca-key.pem"
+CA_CERT_PEM="ca-cert.pem"
 DAYS_VALID=365
-SERVER_KEY="kafka.server.key"
-SERVER_CSR="kafka.server.csr"
-SERVER_CERT="kafka.server.crt"
-SERVER_KEYSTORE="kafka.keystore.jks"
-SERVER_TRUSTSTORE="kafka.truststore.jks"
-CLIENT_KEY="client.key"
-CLIENT_CSR="client.csr"
-CLIENT_CERT="client.crt"
-CLIENT_KEYSTORE="client.keystore.jks"
-CLIENT_TRUSTSTORE="client.truststore.jks"
 STOREPASS="sslkey_creds"
 KEYPASS="sslkey_creds"
 
-# Create directories for output
-OUTPUT_DIR="ssl"
-mkdir -p $OUTPUT_DIR
+# Server Variables
+SERVER_KEYSTORE="kafka.keystore.jks"
+SERVER_CSR="kafka-broker.csr"
+SERVER_CERT="kafka-broker-signed.crt"
+SERVER_TRUSTSTORE="kafka.truststore.jks"
 
-# Move to the output directory
-cd $OUTPUT_DIR
+# Client Variables
+CLIENT_KEYSTORE="client.keystore.jks"
+CLIENT_CSR="kafka-client.csr"
+CLIENT_CERT="kafka-client-signed.crt"
+
+# Output directories
+OUTPUT_DIR="etc"
+SERVER_DIR="$OUTPUT_DIR/kafka/secrets"
+
+# Create directories
+echo "=== Creating Directories ==="
+mkdir -p "$SERVER_DIR" 
+
+cd "$SERVER_DIR"
 
 echo "=== Generating CA Key and Certificate ==="
-openssl genrsa -out $CA_KEY 2048
-openssl req -new -x509 -key $CA_KEY -out $CA_CERT -days $DAYS_VALID -subj "/CN=Kafka CA"
+# Generate a private key for the CA
+openssl genrsa -out $CA_KEY_PEM 2048
 
-echo "=== Generating Server Key and Certificate ==="
-openssl genrsa -out $SERVER_KEY 2048
-openssl req -new -key $SERVER_KEY -out $SERVER_CSR -subj "/CN=kafka"
-openssl x509 -req -in $SERVER_CSR -CA $CA_CERT -CAkey $CA_KEY -CAcreateserial -out $SERVER_CERT -days $DAYS_VALID
+# Generate the self-signed CA certificate
+openssl req -new -x509 -key $CA_KEY_PEM -out $CA_CERT_PEM -days $DAYS_VALID <<EOF
+MX
+Michoacan
+Morelia
+kafka
+kafka
+kafkaCA
+cristian-m-97@hotmail.com
+EOF
 
-echo "=== Creating Server Keystore ==="
-keytool -keystore $SERVER_KEYSTORE -alias kafka -validity $DAYS_VALID -genkey -keyalg RSA -storepass $STOREPASS -keypass $KEYPASS -dname "CN=kafka"
-keytool -keystore $SERVER_KEYSTORE -alias CARoot -import -file $CA_CERT -storepass $STOREPASS -noprompt
-keytool -keystore $SERVER_KEYSTORE -alias kafka -import -file $SERVER_CERT -storepass $STOREPASS -noprompt
+echo "=== Generating keytool ==="
+# Generate a keystore for the Kafka broker
+keytool -genkey -alias kafka-broker -keyalg RSA -keystore $SERVER_KEYSTORE -validity $DAYS_VALID -dname "CN=kafka-broker" -keypass $KEYPASS -storepass $STOREPASS
 
-echo "=== Creating Server Truststore ==="
-if keytool -keystore $SERVER_TRUSTSTORE -alias CARoot -import -file $CA_CERT -storepass $STOREPASS -noprompt; then
-  echo "Server Truststore created successfully."
-else
-  echo "ERROR: Failed to create Server Truststore!" >&2
-  exit 1
-fi
+# Create a CSR (Certificate Signing Request)
+keytool -certreq -alias kafka-broker -file $SERVER_CSR -keystore $SERVER_KEYSTORE -keypass $KEYPASS -storepass $STOREPASS
 
-echo "=== Generating Client Key and Certificate ==="
-openssl genrsa -out $CLIENT_KEY 2048
-openssl req -new -key $CLIENT_KEY -out $CLIENT_CSR -subj "/CN=client"
-openssl x509 -req -in $CLIENT_CSR -CA $CA_CERT -CAkey $CA_KEY -CAcreateserial -out $CLIENT_CERT -days $DAYS_VALID
+# Sign the CSR with the CA
+openssl x509 -req -CA $CA_CERT_PEM -CAkey $CA_KEY_PEM -in $SERVER_CSR -out $SERVER_CERT -days $DAYS_VALID -CAcreateserial
 
-echo "=== Creating Client Keystore ==="
-keytool -keystore $CLIENT_KEYSTORE -alias client -validity $DAYS_VALID -genkey -keyalg RSA -storepass $STOREPASS -keypass $KEYPASS -dname "CN=client"
-keytool -keystore $CLIENT_KEYSTORE -alias CARoot -import -file $CA_CERT -storepass $STOREPASS -noprompt
-keytool -keystore $CLIENT_KEYSTORE -alias client -import -file $CLIENT_CERT -storepass $STOREPASS -noprompt
+# Import the CA certificate and signed certificate into the broker's keystore
+echo yes | keytool -import -alias CARoot -file $CA_CERT_PEM -keystore $SERVER_KEYSTORE -keypass $KEYPASS -storepass $STOREPASS
+echo yes | keytool -import -alias kafka-broker -file $SERVER_CERT -keystore $SERVER_KEYSTORE -keypass $KEYPASS -storepass $STOREPASS
 
-echo "=== Creating Client Truststore ==="
-if keytool -keystore $CLIENT_TRUSTSTORE -alias CARoot -import -file $CA_CERT -storepass $STOREPASS -noprompt; then
-  echo "Client Truststore created successfully."
-else
-  echo "ERROR: Failed to create Client Truststore!" >&2
-  exit 1
-fi
+# Create a truststore and import the CA certificate
+echo yes | keytool -import -alias CARoot -file $CA_CERT_PEM -keystore $SERVER_TRUSTSTORE -keypass $KEYPASS -storepass $STOREPASS
 
-echo "=== SSL Files Created ==="
-echo "Output Directory: $OUTPUT_DIR"
-ls -lh
+# create a keystore for the client
+keytool -genkey -alias kafka-client -keyalg RSA -keystore $CLIENT_KEYSTORE -validity 365 -dname "CN=kafka-client" -keypass $KEYPASS -storepass $STOREPASS
+
+# Create a CSR for the client
+keytool -certreq -alias kafka-client -file $CLIENT_CSR -keystore $CLIENT_KEYSTORE -keypass $KEYPASS -storepass $STOREPASS
+
+# Sign the CSR with the CA
+openssl x509 -req -CA $CA_CERT_PEM -CAkey $CA_KEY_PEM -in $CLIENT_CSR -out $CLIENT_CERT -days $DAYS_VALID -CAcreateserial
+
+# Import the CA certificate and the signed client certificate into the client's keystore
+echo yes | keytool -import -alias CARoot -file $CA_CERT_PEM -keystore $CLIENT_KEYSTORE -keypass $KEYPASS -storepass $STOREPASS
+
+# Import the signed client certificate into the client's keystore
+echo yes | keytool -import -alias kafka-client -file $CLIENT_CERT -keystore $CLIENT_KEYSTORE -keypass $KEYPASS -storepass $STOREPASS
+
+# Save password to files
+echo "=== Saving Passwords to Files ==="
+echo "$KEYPASS" > "kafka_secret.txt"
+
+echo "=== SSL Files Created Successfully ==="
+echo "Server SSL Files Location: $SERVER_DIR"
+ls -lh "$SERVER_DIR"

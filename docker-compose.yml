@@ -2,7 +2,7 @@ version: '3.9'
 
 services:
   config-service:
-    image: config-service
+    image: cristianmiguel/config-service:0.4.0-SNAPSHOT
     container_name: config-service
     ports:
       - "8089:8089"
@@ -21,7 +21,7 @@ services:
       start_period: 30s
 
   discovery-service:
-    image: discovery-service
+    image: cristianmiguel/discovery-service:0.1.0-SNAPSHOT
     container_name: discovery-service
     ports:
       - "8080:8080"
@@ -76,12 +76,12 @@ services:
       KAFKA_LISTENER_NAME_SSL_SSL_PRINCIPAL_MAPPING_RULES: RULE:^CN=([a-zA-Z0-9.]*).*$$/$$1/ , DEFAULT
       KAFKA_LISTENER_NAME_TOKEN_SSL_PRINCIPAL_MAPPING_RULES: RULE:^CN=([a-zA-Z0-9.]*).*$$/$$1/ , DEFAULT
 
-      KAFKA_OPTS: -Djavax.net.debug=all 
+      # KAFKA_OPTS: -Djavax.net.debug=all 
 
     command: "bash -c 'if [ ! -f /tmp/update_run.sh ]; then echo \"ERROR: Did you forget the update_run.sh file that came with this docker-compose.yml file?\" && exit 1 ; else /tmp/update_run.sh && /etc/confluent/docker/run ; fi'"
 
     volumes:
-      - ./secrets/:/etc/kafka/secrets
+      - ./etc/kafka/secrets/:/etc/kafka/secrets
       - /var/lib/kafka/data
       - ./update_run.sh:/tmp/update_run.sh
 
