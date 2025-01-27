@@ -1,5 +1,10 @@
 #!/bin/bash
 
+echo "<<<<<<<<<< Start setup ssl files to kafka >>>>>>>>>>"
+
+# Start in base folder
+cd ..
+
 # Variables
 CA_KEY_PEM="ca-key.pem"
 CA_CERT_PEM="ca-cert.pem"
@@ -53,26 +58,26 @@ keytool -certreq -alias kafka-broker -file $SERVER_CSR -keystore $SERVER_KEYSTOR
 # Sign the CSR with the CA
 openssl x509 -req -CA $CA_CERT_PEM -CAkey $CA_KEY_PEM -in $SERVER_CSR -out $SERVER_CERT -days $DAYS_VALID -CAcreateserial
 
-# Import the CA certificate and signed certificate into the broker's keystore
+echo "Import the CA certificate and signed certificate into the broker's keystore"
 echo yes | keytool -import -alias CARoot -file $CA_CERT_PEM -keystore $SERVER_KEYSTORE -keypass $KEYPASS -storepass $STOREPASS
 echo yes | keytool -import -alias kafka-broker -file $SERVER_CERT -keystore $SERVER_KEYSTORE -keypass $KEYPASS -storepass $STOREPASS
 
-# Create a truststore and import the CA certificate
+echo "Create a truststore and import the CA certificate"
 echo yes | keytool -import -alias CARoot -file $CA_CERT_PEM -keystore $SERVER_TRUSTSTORE -keypass $KEYPASS -storepass $STOREPASS
 
-# create a keystore for the client
+echo "create a keystore for the client"
 keytool -genkey -alias kafka-client -keyalg RSA -keystore $CLIENT_KEYSTORE -validity 365 -dname "CN=kafka-client" -keypass $KEYPASS -storepass $STOREPASS
 
-# Create a CSR for the client
+echo "Create a CSR for the client"
 keytool -certreq -alias kafka-client -file $CLIENT_CSR -keystore $CLIENT_KEYSTORE -keypass $KEYPASS -storepass $STOREPASS
 
-# Sign the CSR with the CA
+echo "Sign the CSR with the CA"
 openssl x509 -req -CA $CA_CERT_PEM -CAkey $CA_KEY_PEM -in $CLIENT_CSR -out $CLIENT_CERT -days $DAYS_VALID -CAcreateserial
 
-# Import the CA certificate and the signed client certificate into the client's keystore
+echo "Import the CA certificate and the signed client certificate into the client's keystore"
 echo yes | keytool -import -alias CARoot -file $CA_CERT_PEM -keystore $CLIENT_KEYSTORE -keypass $KEYPASS -storepass $STOREPASS
 
-# Import the signed client certificate into the client's keystore
+echo "Import the signed client certificate into the client's keystore"
 echo yes | keytool -import -alias kafka-client -file $CLIENT_CERT -keystore $CLIENT_KEYSTORE -keypass $KEYPASS -storepass $STOREPASS
 
 # Save password to files
@@ -82,3 +87,7 @@ echo "$KEYPASS" > "kafka_secret.txt"
 echo "=== SSL Files Created Successfully ==="
 echo "Server SSL Files Location: $SERVER_DIR"
 ls -lh "$SERVER_DIR"
+
+echo ""
+echo "<<<<<<<<<< Finish setup ssl files to kafka >>>>>>>>>>"
+echo ""

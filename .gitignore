@@ -1,15 +1,17 @@
 /.idea
 /.metadata
-/api-gateway
-/auth-service
-/config-service
-/discovery-service
-/news-service
-/notification-service
-/search-service
+/api_gateway
+/auth_service
+/config_service
+/discovery_service
+/news_service
+/notification_service
+/search_service
 /secrets
-/subscription-service
-/user-service
+/subscription_service
+/user_service
 /etc/kafka/secrets
 
+.vscode
+.env
 news-app.code-workspace
