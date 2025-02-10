@@ -100,8 +100,9 @@ for key in "${!REPOSITORIES_URL[@]}"; do
     echo "-- move to the develop branch --"
     git checkout develop
 
-    echo "-- get the pom libraries --"
-    mvn install
+    ##echo "-- get the pom libraries --"
+    ##mvn clean install -DskipTests
+    ## mvn install
 
     cd ..
 

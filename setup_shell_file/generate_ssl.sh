@@ -42,15 +42,15 @@ openssl req -new -x509 -key $CA_KEY_PEM -out $CA_CERT_PEM -days $DAYS_VALID <<EO
 MX
 Michoacan
 Morelia
-kafka
-kafka
-kafkaCA
+localhost
+localhost
+localhost
 cristian-m-97@hotmail.com
 EOF
 
 echo "=== Generating keytool ==="
 # Generate a keystore for the Kafka broker
-keytool -genkey -alias kafka-broker -keyalg RSA -keystore $SERVER_KEYSTORE -validity $DAYS_VALID -dname "CN=kafka-broker" -keypass $KEYPASS -storepass $STOREPASS
+keytool -genkey -alias kafka-broker -keyalg RSA -keystore $SERVER_KEYSTORE -validity $DAYS_VALID -dname "CN=localhost" -keypass $KEYPASS -storepass $STOREPASS
 
 # Create a CSR (Certificate Signing Request)
 keytool -certreq -alias kafka-broker -file $SERVER_CSR -keystore $SERVER_KEYSTORE -keypass $KEYPASS -storepass $STOREPASS
@@ -66,7 +66,7 @@ echo "Create a truststore and import the CA certificate"
 echo yes | keytool -import -alias CARoot -file $CA_CERT_PEM -keystore $SERVER_TRUSTSTORE -keypass $KEYPASS -storepass $STOREPASS
 
 echo "create a keystore for the client"
-keytool -genkey -alias kafka-client -keyalg RSA -keystore $CLIENT_KEYSTORE -validity 365 -dname "CN=kafka-client" -keypass $KEYPASS -storepass $STOREPASS
+keytool -genkey -alias kafka-client -keyalg RSA -keystore $CLIENT_KEYSTORE -validity 365 -dname "CN=localhost" -keypass $KEYPASS -storepass $STOREPASS
 
 echo "Create a CSR for the client"
 keytool -certreq -alias kafka-client -file $CLIENT_CSR -keystore $CLIENT_KEYSTORE -keypass $KEYPASS -storepass $STOREPASS
