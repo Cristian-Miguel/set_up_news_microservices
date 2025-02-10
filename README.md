@@ -7,7 +7,7 @@
 - user service https://github.com/Cristian-Miguel/news_user_service
 - auth service https://github.com/Cristian-Miguel/news_auth_service
 
-# Another commands
+# Other commands
 ``` 
 keytool -importkeystore \
   -srckeystore client.keystore.jks \
