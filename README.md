@@ -18,6 +18,6 @@ chmod +x setup_project.sh
 ```
 and run the shell
 ```bash
-./yourfile.sh
+./setup_project.sh
 ```
 This execute all the files and the repositories that you need to run this project.
