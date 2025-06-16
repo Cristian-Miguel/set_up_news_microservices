@@ -7,18 +7,17 @@
 - user service https://github.com/Cristian-Miguel/news_user_service
 - auth service https://github.com/Cristian-Miguel/news_auth_service
 
-# Other commands
-``` 
-keytool -importkeystore \
-  -srckeystore client.keystore.jks \
-  -destkeystore client.keystore.p12 \
-  -srcstoretype JKS \
-  -deststoretype PKCS12 \
-  -deststorepass changeit
+## Configurate .env
+To start the setup you need write all the varibles with you information, some data is divide in microservice.
+Check the port that you need are not used by others programs.
+
+## Run the shell to setup the data
+First, make the shell file executable
+```bash
+chmod +x setup_project.sh
 ```
+and run the shell
+```bash
+./yourfile.sh
 ```
-openssl pkcs12 -in client.keystore.p12 -nocerts -nodes -out client.key
-```
-```
-openssl pkcs12 -in client.keystore.p12 -clcerts -nokeys -out client.crt
-```
+This execute all the files and the repositories that you need to run this project.
