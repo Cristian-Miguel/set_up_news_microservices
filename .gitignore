@@ -11,6 +11,8 @@
 /subscription_service
 /user_service
 /etc/kafka/secrets
+/etc/redis/secrets
+/config-service
 
 .vscode
 .env

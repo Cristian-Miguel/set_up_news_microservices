@@ -37,6 +37,30 @@ services:
       - SERVER_PORT=8080 # Optional: Ensure Discovery Service knows its port
       - SPRING_PROFILES_ACTIVE=default # Set active Spring profile if needed
 
+  redis:
+    image: redis:7.2.4-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    networks:
+      - news-network
+    volumes:
+      - redis-data:/data
+    # environment:
+    #   - redis_password
+    secrets:
+      - redis_password
+    command: >
+      /bin/sh -c '
+      REDIS_PASS=$(cat /run/secrets/redis_password) && 
+      redis-server --appendonly yes --requirepass "$$REDIS_PASS"
+      '
+    healthcheck:
+      test: ["CMD", "sh", "-c", "redis-cli -a $(cat /run/secrets/redis_password) ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
   kafka:
     image: confluentinc/cp-kafka:7.3.1
     container_name: kafka
@@ -92,3 +116,11 @@ services:
 networks:
   news-network:
     driver: bridge
+
+volumes:
+  redis-data:
+    driver: local
+
+secrets:
+  redis_password:
+    file: ./etc/redis/secrets/redis_password.txt
