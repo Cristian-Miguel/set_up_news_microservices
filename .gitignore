@@ -17,3 +17,8 @@
 .vscode
 .env
 news-app.code-workspace
+
+hs_err_pid15172.log
+hs_err_pid2504.log
+hs_err_pid3696.log
+replay_pid3696.log

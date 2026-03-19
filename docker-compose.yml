@@ -13,6 +13,9 @@ services:
     environment:
       - SPRING_PROFILES_ACTIVE=native
       - SPRING_CLOUD_CONFIG_SERVER_NATIVE_SEARCH_LOCATIONS=file:/config-service/src/main/resources/config-repo
+      - MANAGEMENT_ZIPKIN_TRACING_ENDPOINT=http://zipkin:9411/api/v2/spans
+      - MANAGEMENT_TRACING_SAMPLING_PROBABILITY=1.0
+      - MANAGEMENT_LOKI_URL=http://loki:3100/loki/api/v1/push
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8089/actuator/health || exit 1"]
       interval: 10s
@@ -36,6 +39,8 @@ services:
       - SPRING_APPLICATION_NAME=discovery-service # Name registered in Config Service
       - SERVER_PORT=8080 # Optional: Ensure Discovery Service knows its port
       - SPRING_PROFILES_ACTIVE=default # Set active Spring profile if needed
+      - MANAGEMENT_ZIPKIN_TRACING_ENDPOINT=http://zipkin:9411/api/v2/spans
+      - MANAGEMENT_TRACING_SAMPLING_PROBABILITY=1.0
 
   redis:
     image: redis:7.2.4-alpine
@@ -112,6 +117,47 @@ services:
       - ./etc/kafka/secrets/:/etc/kafka/secrets
       - /var/lib/kafka/data
       - ./update_run.sh:/tmp/update_run.sh
+
+  zipkin:
+    image: openzipkin/zipkin
+    container_name: zipkin
+    ports:
+      - "9411:9411"
+    networks:
+      - news-network
+  
+  loki:
+    image: grafana/loki:2.9.2
+    container_name: loki
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - news-network
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    networks:
+      - news-network
+    depends_on:
+      - loki
+      - zipkin
+  
+  prometheus:
+    image: prom/prometheus:v2.48.0
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./etc/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - news-network
 
 networks:
   news-network:

@@ -1,0 +1,16 @@
+global:
+  scrape_interval: 15s # Preguntar cada 15 segs
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Tarea para escanear tus microservicios Spring Boot
+  - job_name: 'spring-actuator'
+    metrics_path: '/actuator/prometheus' # La ruta mágica que habilitaremos
+    scrape_interval: 5s
+    static_configs:
+      - targets: ['gateway-service:8080', 'auth-service:8089', 'user-service:8081', 'config-service:8088']
+      # Ajusta los puertos y nombres según tu docker-compose real
+      # NOTA: Asegúrate de que los nombres de host coincidan con container_name
