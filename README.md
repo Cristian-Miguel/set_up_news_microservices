@@ -1,36 +1,42 @@
-# 🛠️ Multi-Repo Orchestration & Ecosystem Setup | Distributed News Platform
+# 🛠️ Enterprise Multi-Repo Orchestrator | Distributed News Platform
 
-This repository serves as the **central DevOps and infrastructure orchestrator** for the entire Distributed News Platform ecosystem. It contains the core environment configurations, Docker orchestration files, and automation scripts required to clone, configure, and launch the multi-repo architecture seamlessly.
-
----
-
-## 🔗 Ecosystem Architecture & Linked Repositories
-
-The ecosystem follows a highly decoupled, multi-repo strategy applying **Hexagonal Architecture** and enterprise-level microservice patterns:
-
-*   **Config Service:** [news_config_service](https://github.com/Cristian-Miguel/news_config_service) — Centralized configuration management (Spring Cloud Config) powered by a Git backend.
-*   **Discovery Service:** [news_discovery_service](https://github.com/Cristian-Miguel/news_discovery_service) — Service registry and discovery engine.
-*   **API Gateway:** [news_api_gateway](https://github.com/Cristian-Miguel/news_api_gateway) — Unified entry point routing, security, and load balancing.
-*   **Authentication Service:** [news_auth_service](https://github.com/Cristian-Miguel/news_auth_service) — Core security module handling user access and session tokens (Redis integrated).
-*   **User Service *(WIP)*:** [news_user_service](https://github.com/Cristian-Miguel/news_user_service) — Domain service managing user profiles and relational data.
+This repository serves as the **DevOps and infrastructure core** for the Distributed News Platform. It automates environment provisioning, manages centralized property bindings, secures inter-service traffic via mTLS, and spins up a fully monitored infrastructure using Docker containerization.
 
 ---
 
-## ⚙️ Prerequisites & Environment Configuration
+## 🔗 Connected Microservice Repositories
 
-Before initializing the platform, ensure that the required ports are free on your local machine and set up your environment variables.
+The system follows an asynchronous, decoupled multi-repo setup applying **Hexagonal Architecture** and Domain-Driven Design (DDD) boundaries:
 
-1.  **Port Availability:** Verify that standard microservice ports (e.g., `8888` for Config, `8761` for Eureka, `8080` for Gateway) and infrastructure ports (Kafka, Redis, Prometheus) are not being used by other local services.
-2.  **Configure Environment Variables:** 
-    *   Locate the root `.env` file template.
-    *   Fill in your custom database credentials, secret keys, Kafka broker locations, and specific service properties. The configuration data is structured per microservice for granular control.
+*   **Config Service:** [news_config_service](https://github.com/Cristian-Miguel/news_config_service) — Git-backed centralized configuration manager (Spring Cloud Config Server).
+*   **Discovery Service:** [news_discovery_service](https://github.com/Cristian-Miguel/news_discovery_service) — Service registry leveraging Netflix Eureka.
+*   **API Gateway:** [news_api_gateway](https://github.com/Cristian-Miguel/news_api_gateway) — Edge routing service providing unified entry points and secure token validation.
+*   **Authentication Service:** [news_auth_service](https://github.com/Cristian-Miguel/news_auth_service) — High-performance security token engine integrated with Redis.
+*   **User Service *(WIP)*:** [news_user_service](https://github.com/Cristian-Miguel/news_user_service) — Profile management layer operating under its own database context.
 
 ---
 
-## 🚀 Automated Deployment & Quick Start
+## 🏗️ Architecture & Security Features
 
-The entire ecosystem setup has been fully automated using custom Bash utility scripts. The automation script handles repository cloning, configuration binding, and local container orchestration.
+This infrastructure setup goes beyond local testing and replicates real production standards:
 
-### 1. Grant execution permissions to the setup script:
+*   **Secured Event Broker:** **Apache Kafka** runs in modern **KRaft mode** (no Zookeeper overhead) and enforces **mTLS/SSL Encryption** for all inter-service communication via pre-generated Java Keystores/Truststores (`.jks`).
+*   **Container Security:** Implements **Docker Secrets** to securely provision the **Redis** access keys without exposing raw plaintext passwords in environment variables.
+*   **Deterministic Startup Orchestration:** Services leverage strict container **Healthchecks** (`curl` and `redis-cli` network probes) alongside conditional dependencies (`service_healthy` gates) to ensure backing components are fully responsive before booting dependent applications.
+*   **Centralized Topology Management:** A multi-layered `.env` ecosystem binds cross-functional tokens (JWT secrets, cryptographic salts)[cite: 4] and custom network bindings (`jdbc:mysql://` clusters)[cite: 4] out of the box.
+
+---
+
+## 🚀 Fully Automated Quick Start
+
+The complete provisioning pipeline is encapsulated within custom automated Shell scripts.
+
+### 1. Configure the Environment
+Duplicate the `example.env` template, change the name to `.env` and set your infrastructure values, application ports, JWT token parameters, and database schemas. Ensure the required network ports do not conflict with host machine bindings.
+
+### 2. Run the Automator
+Grant execution permissions and kickstart the full environment generation pipeline:
+
 ```bash
 chmod +x setup_project.sh
+./setup_project.sh
